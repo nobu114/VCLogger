@@ -6,4 +6,4 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    # entrypoint: [ "npm", "run", "start" ]
+    entrypoint: [ "node", "index.js" ]
