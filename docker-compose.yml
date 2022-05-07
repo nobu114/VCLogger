@@ -1,0 +1,12 @@
+version: "3"
+
+services:
+  node:
+    image: node:16.15.0-slim # イメージを指定
+    container_name: node # nodeサーバーなのでこのように命名
+    tty: true
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./node_prj:/usr/src/app
+    working_dir: /usr/src/app
