@@ -1,3 +1,4 @@
+require("dotenv").config();
 const { Client, Intents, MessageEmbed } = require('discord.js')
 const client = new Client({ intents: Object.keys(Intents.FLAGS) })
 const version = {text : 'Version 2.3'};
