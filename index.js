@@ -41,6 +41,11 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         if (oldState.channelId === null && newState.channelId != null) {
             const roles = newState.member.roles.cache;
             const is_bot = newState.member.user.bot;
+            const vc_calling = newState.guild.roles.cache.find(role => role.name === "VC Calling")
+            if (typeof vc_calling !== "undefined")
+            {
+                newState.member.roles.add(vc_calling)
+            }
             if (!is_bot) {
                 roles.map((role) => {
                     if (role.name == "VC Entry") {
@@ -52,6 +57,11 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         else if (oldState.channelId != null && newState.channelId === null) {
             const roles = oldState.member.roles.cache;
             const is_bot = oldState.member.user.bot;
+            const vc_calling = newState.guild.roles.cache.find(role => role.name === "VC Calling")
+            if (typeof vc_calling !== "undefined")
+            {
+                oldState.member.roles.remove(vc_calling)
+            }
             if (!is_bot) {
                 roles.map((role) => {
                     if (role.name == "VC Exit") {
