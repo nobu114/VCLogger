@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { Client, Intents, MessageEmbed } = require('discord.js')
 const client = new Client({ intents: Object.keys(Intents.FLAGS) })
-const version = {text : 'Version 2.3'};
+const version = {text : 'Version 2.4'};
 
 const send_vc_notify = (voicestate, is_exit) => {
     const displayColor = voicestate.member.displayColor;
