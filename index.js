@@ -1,76 +1,61 @@
-require("dotenv").config();
-const { Client, Intents, MessageEmbed } = require('discord.js')
-const client = new Client({ intents: Object.keys(Intents.FLAGS) })
-const version = {text : 'Version 2.4'};
+const { Client, Events, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMembers,
+    ],
+});
+const version = { text: 'Version 3.0' };
 
 const send_vc_notify = (voicestate, is_exit) => {
-    const displayColor = voicestate.member.displayColor;
-    const displayName = voicestate.member.displayName;
-    const ChannelName = voicestate.channel.name;
-    const displayAvatarURL = voicestate.member.displayAvatarURL();
-    const ChannelMemberSize = voicestate.channel.members.size;
-    const Embed = new MessageEmbed()
-    Embed.setColor(displayColor);
-        if (is_exit == false){
-            let author= {
-                name: "VC入室",
-                iconURL: displayAvatarURL
-            }
-            Embed.setTitle(displayName + "が" + ChannelName + "に入室しました！");
-            Embed.setAuthor(author);
-        }
-        else if (is_exit == true){
-            let author= {
-                name: "VC退室",
-                iconURL: displayAvatarURL
-            }
-            Embed.setTitle(displayName + "が" + ChannelName + "から退室しました！");
-            Embed.setAuthor(author);
-        }
-        Embed.setDescription("現在の参加者数は" + String(ChannelMemberSize) + "人です。")
-        Embed.setFooter(version)
-    voicestate.guild.systemChannel.send({ embeds: [Embed] }).catch(console.error);
-}
+    const systemChannel = voicestate.guild.systemChannel;
+    if (!systemChannel) return;
 
-client.once('ready', () => {
+    const member = voicestate.member;
+    const channel = voicestate.channel;
+    const embed = new EmbedBuilder()
+        .setColor(member.displayColor)
+        .setAuthor({
+            name: is_exit ? 'VC退室' : 'VC入室',
+            iconURL: member.displayAvatarURL(),
+        })
+        .setTitle(is_exit
+            ? `${member.displayName}が${channel.name}から退室しました！`
+            : `${member.displayName}が${channel.name}に入室しました！`)
+        .setDescription(`現在の参加者数は${channel.members.size}人です。`)
+        .setFooter(version);
+
+    systemChannel.send({ embeds: [embed] }).catch(console.error);
+};
+
+const hasRole = (member, roleName) =>
+    member.roles.cache.some((role) => role.name === roleName);
+
+client.once(Events.ClientReady, () => {
     console.log('ログインしました。');
-})
+});
 
-client.on('voiceStateUpdate', (oldState, newState) => {
-    if (newState && oldState) {
-        if (oldState.channelId === null && newState.channelId != null) {
-            const roles = newState.member.roles.cache;
-            const is_bot = newState.member.user.bot;
-            const vc_calling = newState.guild.roles.cache.find(role => role.name === "VC Calling")
-            if (typeof vc_calling !== "undefined")
-            {
-                newState.member.roles.add(vc_calling)
-            }
-            if (!is_bot) {
-                roles.map((role) => {
-                    if (role.name == "VC Entry") {
-                        send_vc_notify(newState, false);
-                    }
-                });
-            }
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+    const member = newState.member ?? oldState.member;
+    if (!member) return;
+
+    const vc_calling = newState.guild.roles.cache.find((role) => role.name === 'VC Calling');
+
+    if (oldState.channelId === null && newState.channelId !== null) {
+        // 入室
+        if (vc_calling) member.roles.add(vc_calling).catch(console.error);
+        if (!member.user.bot && hasRole(member, 'VC Entry')) {
+            send_vc_notify(newState, false);
         }
-        else if (oldState.channelId != null && newState.channelId === null) {
-            const roles = oldState.member.roles.cache;
-            const is_bot = oldState.member.user.bot;
-            const vc_calling = newState.guild.roles.cache.find(role => role.name === "VC Calling")
-            if (typeof vc_calling !== "undefined")
-            {
-                oldState.member.roles.remove(vc_calling)
-            }
-            if (!is_bot) {
-                roles.map((role) => {
-                    if (role.name == "VC Exit") {
-                        send_vc_notify(oldState, true);
-                    }
-                });
-            }
+    } else if (oldState.channelId !== null && newState.channelId === null) {
+        // 退室
+        if (vc_calling) member.roles.remove(vc_calling).catch(console.error);
+        if (!member.user.bot && hasRole(member, 'VC Exit')) {
+            send_vc_notify(oldState, true);
         }
     }
-})
+});
 
 client.login(process.env.DISCORD_TOKEN);
