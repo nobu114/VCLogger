@@ -7,3 +7,4 @@ services:
       context: ./
       dockerfile: Dockerfile
     entrypoint: [ "npm", "run", "start" ]
+    restart: always
